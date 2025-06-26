@@ -636,26 +636,25 @@ Map<String, double> calculateInheritanceShares(Map<String, dynamic> data) {
   }
 
   // remaining sects/subsects
-  return {
-    'Error': 0.0,
-  };
+  return {'Error': 0.0};
 }
+
 Map<String, double> _calculateHanafiShares(Map<String, dynamic> data) {
   double total = double.tryParse(data['total_assets'] ?? '0') ?? 0.0;
 
-  // Core info
   int sons = int.tryParse(data['num_sons'] ?? '0') ?? 0;
-  int daughters = int.tryParse(data['num_daughters'] ?? '0') ?? 0;
+  int totalChildren = int.tryParse(data['num_children'] ?? '0') ?? 0;
+  int daughters = totalChildren - sons;
+
   String gender = data['gender'] ?? '';
   String wasMarried = data['was_married'] ?? 'No';
   String hasParents = data['has_parents'] ?? 'None';
+
   int numWives = int.tryParse(data['currently_married_wives'] ?? '0') ?? 0;
 
-  // Grandparents
   String paternalGrandparents = data['paternal_grandparents'] ?? 'None';
   String maternalGrandparents = data['maternal_grandparents'] ?? 'None';
 
-  // Adopted children (1/3 portion)
   int numAdopted = int.tryParse(data['num_adopted_children'] ?? '0') ?? 0;
   String includeAdopted = data['include_adopted'] ?? 'No';
   String adoptedDistMethod = data['adopted_distribution_method'] ?? '';
@@ -664,51 +663,47 @@ Map<String, double> _calculateHanafiShares(Map<String, dynamic> data) {
   Map<String, double> shares = {};
   double remaining = total;
 
-  // Allocate 1/3 portion to adopted children if allowed
-  double oneThird = total * (1 / 3);
   if (wantsToIncludeAdopted && numAdopted > 0) {
-    if (adoptedDistMethod == 'Equally among all adopted children' || numAdopted == 1) {
-      double share = oneThird / numAdopted;
+    double oneThird = total / 3;
+    if (adoptedDistMethod == 'Equally among all adopted children' ||
+        numAdopted == 1) {
+      double eachShare = oneThird / numAdopted;
       for (int i = 1; i <= numAdopted; i++) {
-        shares['Adopted Child $i'] = share;
+        shares['Adopted Child $i'] = eachShare;
       }
     }
-    //custom shares still to be done
     remaining -= oneThird;
   }
 
-  // Spouse
   bool husbandAlive = gender == 'Female' && wasMarried == 'Yes';
   bool wifeAlive = gender == 'Male' && wasMarried == 'Yes' && numWives > 0;
 
   if (husbandAlive) {
-    double husbandShare = (sons + daughters > 0) ? total * 0.25 : total * 0.5;
+    double husbandShare = (totalChildren > 0) ? total * 0.25 : total * 0.5;
     shares['Husband'] = husbandShare;
     remaining -= husbandShare;
   } else if (wifeAlive) {
-    double wifeShare = (sons + daughters > 0) ? total * 0.125 : total * 0.25;
-    double totalWivesShare = wifeShare;
-    shares['Wives (total)'] = totalWivesShare;
-    remaining -= totalWivesShare;
+    double wivesShare = (totalChildren > 0) ? total * 0.125 : total * 0.25;
+    shares['Wives (total)'] = wivesShare;
+    remaining -= wivesShare;
   }
 
-  //Parents
   if (hasParents == 'Both alive' || hasParents == 'Only mother') {
-    double motherShare = total * (1 / 6);
+    double motherShare = total / 6;
     shares['Mother'] = motherShare;
     remaining -= motherShare;
   }
 
   if (hasParents == 'Both alive' || hasParents == 'Only father') {
-    double fatherShare = (sons + daughters == 0)
-        ? remaining
-        : total * (1 / 6);
+    double fatherShare = (totalChildren == 0) ? remaining : total / 6;
     shares['Father'] = fatherShare;
-    remaining -= (sons + daughters > 0) ? fatherShare : 0;
+    if (totalChildren > 0)
+      remaining -= fatherShare;
+    else
+      remaining = 0;
   }
 
-  //Children (sons get 2x daughters)
-  final int parts = sons * 2 + daughters;
+  int parts = sons * 2 + daughters;
   if (parts > 0 && remaining > 0) {
     double perPart = remaining / parts;
     if (sons > 0) shares['Sons (total)'] = perPart * sons * 2;
@@ -716,25 +711,24 @@ Map<String, double> _calculateHanafiShares(Map<String, dynamic> data) {
     remaining = 0;
   }
 
-  //  Paternal Grandparents (only if no parents)
   if ((hasParents == 'None' || hasParents == 'Only mother') &&
-      (paternalGrandparents == 'Both alive' || paternalGrandparents == 'Only grandfather')) {
+      (paternalGrandparents == 'Both alive' ||
+          paternalGrandparents == 'Only grandfather')) {
     if (remaining > 0) {
       shares['Paternal Grandfather'] = remaining;
       remaining = 0;
     }
   }
 
-  //Maternal Grandparents (only if no parents)
   if ((hasParents == 'None' || hasParents == 'Only father') &&
-      (maternalGrandparents == 'Both alive' || maternalGrandparents == 'Only grandmother')) {
+      (maternalGrandparents == 'Both alive' ||
+          maternalGrandparents == 'Only grandmother')) {
     if (remaining > 0) {
       shares['Maternal Grandmother'] = remaining;
       remaining = 0;
     }
   }
 
-  // Final fallback
   if (remaining > 0) {
     shares['Unallocated (Remaining)'] = remaining;
   }
@@ -744,7 +738,6 @@ Map<String, double> _calculateHanafiShares(Map<String, dynamic> data) {
 
 Map<String, double> _calculateShafiShares(Map<String, dynamic> data) {
   double total = double.tryParse(data['total_assets'] ?? '0') ?? 0.0;
-
 
   int sons = int.tryParse(data['num_sons'] ?? '0') ?? 0;
   int daughters = int.tryParse(data['num_daughters'] ?? '0') ?? 0;
@@ -769,7 +762,8 @@ Map<String, double> _calculateShafiShares(Map<String, dynamic> data) {
   // Allocate 1/3 portion to adopted children (will-based portion)
   double oneThird = total * (1 / 3);
   if (wantsToIncludeAdopted && numAdopted > 0) {
-    if (adoptedDistMethod == 'Equally among all adopted children' || numAdopted == 1) {
+    if (adoptedDistMethod == 'Equally among all adopted children' ||
+        numAdopted == 1) {
       double share = oneThird / numAdopted;
       for (int i = 1; i <= numAdopted; i++) {
         shares['Adopted Child $i'] = share;
@@ -795,15 +789,17 @@ Map<String, double> _calculateShafiShares(Map<String, dynamic> data) {
 
   // Parents
   if (hasParents == 'Both alive' || hasParents == 'Only mother') {
-    double motherShare = (sons + daughters > 0) ? total * (1 / 6) : total * (1 / 3);
+    double motherShare =
+        (sons + daughters > 0) ? total * (1 / 6) : total * (1 / 3);
     shares['Mother'] = motherShare;
     remaining -= motherShare;
   }
 
   if (hasParents == 'Both alive' || hasParents == 'Only father') {
-    double fatherShare = (sons + daughters == 0)
-        ? remaining // residual
-        : total * (1 / 6);
+    double fatherShare =
+        (sons + daughters == 0)
+            ? remaining // residual
+            : total * (1 / 6);
     shares['Father'] = fatherShare;
     remaining -= (sons + daughters > 0) ? fatherShare : 0;
   }
@@ -819,7 +815,8 @@ Map<String, double> _calculateShafiShares(Map<String, dynamic> data) {
 
   // Grandparents (only if parents not alive)
   if ((hasParents == 'None' || hasParents == 'Only mother') &&
-      (paternalGrandparents == 'Both alive' || paternalGrandparents == 'Only grandfather')) {
+      (paternalGrandparents == 'Both alive' ||
+          paternalGrandparents == 'Only grandfather')) {
     if (remaining > 0) {
       shares['Paternal Grandfather'] = remaining;
       remaining = 0;
@@ -827,7 +824,8 @@ Map<String, double> _calculateShafiShares(Map<String, dynamic> data) {
   }
 
   if ((hasParents == 'None' || hasParents == 'Only father') &&
-      (maternalGrandparents == 'Both alive' || maternalGrandparents == 'Only grandmother')) {
+      (maternalGrandparents == 'Both alive' ||
+          maternalGrandparents == 'Only grandmother')) {
     if (remaining > 0) {
       shares['Maternal Grandmother'] = remaining;
       remaining = 0;
@@ -867,7 +865,8 @@ Map<String, double> _calculateMalikiShares(Map<String, dynamic> data) {
   double oneThird = total / 3;
   if (wantsToIncludeAdopted && numAdopted > 0) {
     double adoptedShare = oneThird;
-    if (adoptedDistMethod == 'Equally among all adopted children' || numAdopted == 1) {
+    if (adoptedDistMethod == 'Equally among all adopted children' ||
+        numAdopted == 1) {
       double share = adoptedShare / numAdopted;
       for (int i = 1; i <= numAdopted; i++) {
         shares['Adopted Child $i'] = share;
@@ -901,8 +900,10 @@ Map<String, double> _calculateMalikiShares(Map<String, dynamic> data) {
   if (hasParents == 'Both alive' || hasParents == 'Only father') {
     double fatherShare = (sons + daughters > 0) ? total * 1 / 6 : remaining;
     shares['Father'] = fatherShare;
-    if (sons + daughters > 0) remaining -= fatherShare;
-    else remaining = 0;
+    if (sons + daughters > 0)
+      remaining -= fatherShare;
+    else
+      remaining = 0;
   }
 
   // Children
@@ -916,10 +917,12 @@ Map<String, double> _calculateMalikiShares(Map<String, dynamic> data) {
 
   //  Grandparents (if parents missing)
   if (hasParents == 'None') {
-    if (paternalGrandparents == 'Only grandfather' || paternalGrandparents == 'Both alive') {
+    if (paternalGrandparents == 'Only grandfather' ||
+        paternalGrandparents == 'Both alive') {
       shares['Paternal Grandfather'] = remaining;
       remaining = 0;
-    } else if (maternalGrandparents == 'Only grandmother' || maternalGrandparents == 'Both alive') {
+    } else if (maternalGrandparents == 'Only grandmother' ||
+        maternalGrandparents == 'Both alive') {
       shares['Maternal Grandmother'] = remaining;
       remaining = 0;
     }
@@ -958,7 +961,8 @@ Map<String, double> _calculateHanbaliShares(Map<String, dynamic> data) {
   double oneThird = total / 3;
   if (wantsToIncludeAdopted && numAdopted > 0) {
     double adoptedShare = oneThird;
-    if (adoptedDistMethod == 'Equally among all adopted children' || numAdopted == 1) {
+    if (adoptedDistMethod == 'Equally among all adopted children' ||
+        numAdopted == 1) {
       double share = adoptedShare / numAdopted;
       for (int i = 1; i <= numAdopted; i++) {
         shares['Adopted Child $i'] = share;
@@ -991,8 +995,10 @@ Map<String, double> _calculateHanbaliShares(Map<String, dynamic> data) {
   if (hasParents == 'Both alive' || hasParents == 'Only father') {
     double fatherShare = (sons + daughters > 0) ? total * 1 / 6 : remaining;
     shares['Father'] = fatherShare;
-    if (sons + daughters > 0) remaining -= fatherShare;
-    else remaining = 0;
+    if (sons + daughters > 0)
+      remaining -= fatherShare;
+    else
+      remaining = 0;
   }
 
   //Children (sons : daughters = 2 : 1)
@@ -1006,10 +1012,12 @@ Map<String, double> _calculateHanbaliShares(Map<String, dynamic> data) {
 
   // Grandparents (used if parents are not alive)
   if (hasParents == 'None') {
-    if (paternalGrandparents == 'Only grandfather' || paternalGrandparents == 'Both alive') {
+    if (paternalGrandparents == 'Only grandfather' ||
+        paternalGrandparents == 'Both alive') {
       shares['Paternal Grandfather'] = remaining;
       remaining = 0;
-    } else if (maternalGrandparents == 'Only grandmother' || maternalGrandparents == 'Both alive') {
+    } else if (maternalGrandparents == 'Only grandmother' ||
+        maternalGrandparents == 'Both alive') {
       shares['Maternal Grandmother'] = remaining;
       remaining = 0;
     }
@@ -1053,7 +1061,8 @@ Map<String, double> _calculateJafariShares(Map<String, dynamic> data) {
 
   // Parents
   if (hasParents == 'Both alive' || hasParents == 'Only mother') {
-    double motherShare = (sons + daughters > 0) ? total * 0.1667 : total * 0.3333;
+    double motherShare =
+        (sons + daughters > 0) ? total * 0.1667 : total * 0.3333;
     shares['Mother'] = motherShare;
     remaining -= motherShare;
   }
@@ -1105,7 +1114,8 @@ Map<String, double> _calculateIsmailiShares(Map<String, dynamic> data) {
 
   //  Parents
   if (hasParents == 'Both alive' || hasParents == 'Only mother') {
-    double motherShare = (sons + daughters > 0) ? total * 0.1667 : total * 0.3333;
+    double motherShare =
+        (sons + daughters > 0) ? total * 0.1667 : total * 0.3333;
     shares['Mother'] = motherShare;
     remaining -= motherShare;
   }
@@ -1163,9 +1173,10 @@ Map<String, double> _calculateZaidiShares(Map<String, dynamic> data) {
   }
 
   if (hasParents == 'Both alive' || hasParents == 'Only father') {
-    double fatherShare = (sons + daughters == 0)
-        ? remaining // All remaining if no children
-        : total * 0.1667;
+    double fatherShare =
+        (sons + daughters == 0)
+            ? remaining // All remaining if no children
+            : total * 0.1667;
     shares['Father'] = fatherShare;
     remaining -= (sons + daughters > 0) ? fatherShare : 0;
   }
