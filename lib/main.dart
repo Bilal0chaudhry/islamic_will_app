@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Islamic Wiz',
+      title: 'Wassiyah',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.system,
       theme: ThemeData(
@@ -87,70 +87,45 @@ class _MainPageState extends State<MainPage> {
       onTap: () => setState(() => expandedCard = null),
       child: Scaffold(
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(80),
-          child: ClipPath(
-            clipper: _AppBarClipper(),
+          preferredSize: const Size.fromHeight(60),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(20),
+            ),
             child: Container(
               decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: const Color(0xFFD4AF37), width: 3),
+                gradient: LinearGradient(
+                  colors: [bluish, const Color(0xFF006680)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ),
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [bluish, const Color(0xFF006680)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: ShaderMask(
-                      shaderCallback: (rect) {
-                        return LinearGradient(
-                          colors: [Colors.white, Colors.transparent],
-                          stops: const [0.1, 0.3],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ).createShader(rect);
-                      },
-                      blendMode: BlendMode.overlay,
-                      child: Container(color: Colors.transparent),
-                    ),
-                  ),
-                  AppBar(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.mosque, color: Colors.white, size: 28),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Islamic Wiz',
-                          style: GoogleFonts.scheherazadeNew(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                blurRadius: 4,
-                                color: Colors.black.withOpacity(0.3),
-                                offset: const Offset(2, 2),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Icon(Icons.mosque, color: Colors.white, size: 28),
-                      ],
-                    ),
-                    centerTitle: true,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
                   ),
                 ],
+              ),
+              child: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                title: Text(
+                  'الوصية',
+                  style: GoogleFonts.scheherazadeNew(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 4,
+                        color: Colors.black.withOpacity(0.3),
+                        offset: const Offset(2, 2),
+                      ),
+                    ],
+                  ),
+                ),
+                centerTitle: true,
               ),
             ),
           ),
@@ -206,32 +181,6 @@ class _MainPageState extends State<MainPage> {
       ),
     );
   }
-}
-
-class _AppBarClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 25);
-    path.quadraticBezierTo(
-      size.width / 4,
-      size.height,
-      size.width / 2,
-      size.height,
-    );
-    path.quadraticBezierTo(
-      3 * size.width / 4,
-      size.height,
-      size.width,
-      size.height - 25,
-    );
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
 class ExpandableCard extends StatelessWidget {
