@@ -58,7 +58,6 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   String? expandedCard;
-
   final bluish = const Color(0xFF004E64);
   final softGreen = const Color(0xFF007F5F);
 
@@ -87,19 +86,74 @@ class _MainPageState extends State<MainPage> {
     return GestureDetector(
       onTap: () => setState(() => expandedCard = null),
       child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: bluish,
-          title: Text(
-            'Islamic Wiz',
-            style: GoogleFonts.scheherazadeNew(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: ClipPath(
+            clipper: _AppBarClipper(),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: const Color(0xFFD4AF37), width: 3),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [bluish, const Color(0xFF006680)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: ShaderMask(
+                      shaderCallback: (rect) {
+                        return LinearGradient(
+                          colors: [Colors.white, Colors.transparent],
+                          stops: const [0.1, 0.3],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ).createShader(rect);
+                      },
+                      blendMode: BlendMode.overlay,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                  AppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.mosque, color: Colors.white, size: 28),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Islamic Wiz',
+                          style: GoogleFonts.scheherazadeNew(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 4,
+                                color: Colors.black.withOpacity(0.3),
+                                offset: const Offset(2, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(Icons.mosque, color: Colors.white, size: 28),
+                      ],
+                    ),
+                    centerTitle: true,
+                  ),
+                ],
+              ),
             ),
           ),
-          centerTitle: true,
-          elevation: 6,
-          shadowColor: Colors.black87,
         ),
         body: Column(
           children: [
@@ -138,30 +192,46 @@ class _MainPageState extends State<MainPage> {
                 ],
               ),
             ),
-            Expanded(
-              flex: 1,
-              child: Row(
-                children: [
-                  ExpandableCard(
-                    icon: Icons.insert_drive_file_rounded,
-                    label: 'Previous Wills',
-                    cardName: 'previous',
-                    isExpanded: expandedCard == 'previous',
-                    onTap: () => handleCardTap('previous'),
-                    gradient: [Colors.orange.shade700, Colors.deepOrangeAccent],
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
-                    ),
-                  ),
-                ],
-              ),
+            ExpandableCard(
+              icon: Icons.insert_drive_file_rounded,
+              label: 'Previous Wills',
+              cardName: 'previous',
+              isExpanded: expandedCard == 'previous',
+              onTap: () => handleCardTap('previous'),
+              gradient: [const Color(0xFFD4AF37), const Color(0xFFF9D423)],
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+class _AppBarClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 25);
+    path.quadraticBezierTo(
+      size.width / 4,
+      size.height,
+      size.width / 2,
+      size.height,
+    );
+    path.quadraticBezierTo(
+      3 * size.width / 4,
+      size.height,
+      size.width,
+      size.height - 25,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
 class ExpandableCard extends StatelessWidget {
@@ -186,6 +256,23 @@ class ExpandableCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Alignment begin, end;
+    List<Color> finalGradient = gradient;
+
+    if (cardName == 'will') {
+      finalGradient = [const Color(0xFF002D40), const Color(0xFF00A896)];
+      begin = Alignment.topLeft;
+      end = Alignment.bottomRight;
+    } else if (cardName == 'settings') {
+      finalGradient = [const Color(0xFF5E35B1), const Color(0xFF3949AB)];
+      begin = Alignment.topRight;
+      end = Alignment.bottomLeft;
+    } else {
+      finalGradient = [const Color(0xFFC9A227), const Color(0xFFFFE082)];
+      begin = Alignment.bottomCenter;
+      end = Alignment.topCenter;
+    }
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -201,16 +288,19 @@ class ExpandableCard extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: gradient,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              colors: finalGradient,
+              begin: begin,
+              end: end,
+              stops: const [0.2, 0.8],
+              tileMode: TileMode.clamp,
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                offset: const Offset(6, 6),
-                blurRadius: 12,
+                color: Colors.black.withOpacity(0.4),
+                offset: const Offset(8, 8),
+                blurRadius: 16,
+                spreadRadius: 1,
               ),
             ],
           ),
@@ -264,4 +354,3 @@ class HistoryPage extends StatelessWidget {
     );
   }
 }
-
