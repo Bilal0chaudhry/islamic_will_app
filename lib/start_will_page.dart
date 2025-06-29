@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'results_page.dart';
 
@@ -360,11 +361,16 @@ class _StartWillPageState extends State<StartWillPage>
                 ? answers['subsect_sunni']
                 : answers['subsect_shia'],
       });
+
       Navigator.push(
         context,
         MaterialPageRoute(
           builder:
-              (_) => ResultsPage(results: result, totalAssets: totalAssets),
+              (_) => ResultsPage(
+                results: result,
+                totalAssets: totalAssets,
+                country: country ?? '',
+              ),
         ),
       );
     });
@@ -376,24 +382,41 @@ class _StartWillPageState extends State<StartWillPage>
   Widget _buildTextQuestion(Map<String, dynamic> q, Key key) {
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: Padding(
-        key: key,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 40),
-            Text(q['question'], style: questionStyle),
-            const SizedBox(height: 20),
-            TextField(
-              onChanged: (value) => setState(() => answers[q['key']] = value),
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Enter your answer',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque, 
+        onTap: () {
+          FocusScope.of(context).unfocus(); 
+        },
+        child: Padding(
+          key: key,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              Text(q['question'], style: questionStyle),
+              const SizedBox(height: 20),
+              TextField(
+                onChanged: (value) => setState(() => answers[q['key']] = value),
+                inputFormatters: [
+                  FilteringTextInputFormatter.deny(RegExp(r'[0-9]')),
+                ],
+                cursorColor: Colors.amber,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: const BorderSide(color: Colors.amber),
+                  ),
+                  hintText: 'Enter your answer',
+                ),
               ),
-            ),
-            const Spacer(),
-          ],
+              const Spacer(),
+            ],
+          ),
         ),
       ),
     );
@@ -402,25 +425,42 @@ class _StartWillPageState extends State<StartWillPage>
   Widget _buildNumberQuestion(Map<String, dynamic> q, Key key) {
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: Padding(
-        key: key,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 40),
-            Text(q['question'], style: questionStyle),
-            const SizedBox(height: 20),
-            TextField(
-              keyboardType: TextInputType.number,
-              onChanged: (value) => setState(() => answers[q['key']] = value),
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Enter a number',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: Padding(
+          key: key,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              Text(q['question'], style: questionStyle),
+              const SizedBox(height: 20),
+              TextField(
+                keyboardType: TextInputType.number,
+                onChanged: (value) => setState(() => answers[q['key']] = value),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                ],
+                cursorColor: Colors.amber,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: const BorderSide(color: Colors.amber),
+                  ),
+                  hintText: 'Enter numbers only',
+                ),
               ),
-            ),
-            const Spacer(),
-          ],
+              const Spacer(),
+            ],
+          ),
         ),
       ),
     );
